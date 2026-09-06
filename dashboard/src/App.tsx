@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Shield, 
   Activity, 
@@ -10,68 +10,136 @@ import {
   Layers, 
   FileCode2, 
   Terminal,
-  Info
+  Play,
+  Flame,
+  Sparkles,
+  Clock,
+  Radio
 } from 'lucide-react';
 
 type Scenario = 'NORMAL' | 'CURVEBALL' | 'BLOCK';
-type ActiveTab = 'overview' | 'graph' | 'verification' | 'checkpoints' | 'events';
+type TabType = 'overview' | 'graph' | 'verification' | 'checkpoints' | 'events';
 
 export const App: React.FC = () => {
   const [scenario, setScenario] = useState<Scenario>('NORMAL');
-  const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [activePipelineStep, setActivePipelineStep] = useState<number>(6);
   const [showRecoveryModal, setShowRecoveryModal] = useState<boolean>(false);
+  const [selectedNode, setSelectedNode] = useState<string | null>(null);
 
-  // Scenario state data
+  // Trigger interactive analysis animation
+  const runLiveAnalysis = (targetScenario: Scenario) => {
+    setScenario(targetScenario);
+    setIsAnalyzing(true);
+    setActivePipelineStep(1);
+
+    const stepIntervals = [250, 500, 800, 1100, 1400, 1700];
+    stepIntervals.forEach((time, index) => {
+      setTimeout(() => {
+        setActivePipelineStep(index + 1);
+        if (index === stepIntervals.length - 1) {
+          setIsAnalyzing(false);
+        }
+      }, time);
+    });
+  };
+
+  useEffect(() => {
+    // Initial load animation
+    runLiveAnalysis('NORMAL');
+  }, []);
+
   const scenarioData = {
     NORMAL: {
       changeName: 'Final-Entire-Checkpoint-Note',
-      baseRef: 'HEAD~1',
-      headRef: 'HEAD',
+      filePath: 'BUILDATHON.md:L148-156',
+      baseRef: 'HEAD~1 (829017f)',
+      headRef: 'HEAD (49956db)',
       decision: 'REVIEW',
-      reason: 'Graph evidence is incomplete (worktree warning & degraded completeness). Deterministic verification required.',
-      confirmed: 6,
-      incomplete: 2,
+      reason: 'Graph evidence contains working tree snapshot warnings and 1 partial analysis warning. Deterministic verification required.',
+      confirmedCount: 6,
+      incompleteCount: 2,
       verifyCount: 2,
       verificationPassed: true,
-      verificationOutput: 'All deterministic contract checks and tests passed.',
-      warnings: [
-        'W_WORKTREE_SNAPSHOT: Snapshot records read from working tree (--worktree requested)',
-        'Partial analysis detected: completeness level degraded with 1 partial failure'
+      verificationTimeMs: 142,
+      verificationLogs: [
+        '[+] go vet ./... -> PASS (0 error(s), 0 warning(s))',
+        '[+] go test -short ./... -> PASS (4 tests passed in 0.51s)',
+        '[✓] TestConfirmedEvidence: PASSED (0.00s)',
+        '[✓] TestCurveballIncompleteEvidence: PASSED (0.00s)',
+        '[✓] TestDeterministicVerificationFailure: PASSED (0.00s)',
+        '[✓] TestEventSinkAndDatabricksFallback: PASSED (0.00s)',
+        '--------------------------------------------------',
+        'VERIFICATION VERDICT: ALL INVARIANTS SATISFIED'
+      ],
+      nodes: [
+        { id: 'source', name: 'Final-Entire-Checkpoint-Note', kind: 'SECTION', status: 'changed', file: 'BUILDATHON.md' },
+        { id: 'caller1', name: 'VerificationEngine.RunVerification', kind: 'FUNCTION', status: 'confirmed', file: 'aegisgraph/verifier.go:21', rel: 'CALLS' },
+        { id: 'caller2', name: 'DecisionEngine.Evaluate', kind: 'METHOD', status: 'confirmed', file: 'aegisgraph/decision.go:15', rel: 'CALLS' },
+        { id: 'consumer1', name: 'RiskReport.Evidence', kind: 'TYPE', status: 'confirmed', file: 'aegisgraph/model.go:52', rel: 'USES_TYPE' },
+        { id: 'warn1', name: 'W_WORKTREE_SNAPSHOT', kind: 'WARNING', status: 'incomplete', file: 'Entire Graph Engine', rel: 'EMITS_WARNING' },
+        { id: 'warn2', name: 'W_PARTIAL_ANALYSIS', kind: 'PARTIAL', status: 'incomplete', file: 'Entire Graph Engine', rel: 'DEGRADED_COVERAGE' },
       ],
       eventId: 'evt_1788684880056506300'
     },
     CURVEBALL: {
       changeName: 'DynamicHandlerRegistry & TokenValidator',
-      baseRef: 'HEAD~1',
-      headRef: 'HEAD',
+      filePath: 'internal/auth/registry.go:L34',
+      baseRef: 'HEAD~1 (829017f)',
+      headRef: 'HEAD (49956db)',
       decision: 'REVIEW',
-      reason: 'Curveball active: Reflection / dynamic registration pattern detected. Static Entire Graph cannot prove completeness.',
-      confirmed: 4,
-      incomplete: 3,
+      reason: 'Curveball active: Reflection (reflect.ValueOf) & dynamic registration detected. Entire Graph cannot guarantee complete consumer coverage.',
+      confirmedCount: 4,
+      incompleteCount: 3,
       verifyCount: 3,
       verificationPassed: true,
-      verificationOutput: 'All deterministic compiler checks and unit test suites passed.',
-      warnings: [
-        'Dynamic dispatch / runtime type registration pattern detected (Go reflect.ValueOf)',
-        'W_WORKTREE_SNAPSHOT: snapshot records are read from working tree',
-        'Partial analysis detected: completeness level degraded with 1 partial failure'
+      verificationTimeMs: 188,
+      verificationLogs: [
+        '[!] Dynamic pattern flagged: reflect.ValueOf(handlerRegistry)',
+        '[!] Graph analysis: Cannot resolve downstream dynamic callers statically',
+        '[+] Compiling Go target package: PASS',
+        '[+] Running targeted test suites: PASS (0.59s)',
+        '[✓] Dynamic dispatch fallback checks passed',
+        '--------------------------------------------------',
+        'VERIFICATION VERDICT: PASS (HUMAN REVIEW REQUIRED FOR DYNAMIC REGISTRY)'
+      ],
+      nodes: [
+        { id: 'source', name: 'DynamicHandlerRegistry', kind: 'STRUCT', status: 'changed', file: 'internal/auth/registry.go' },
+        { id: 'caller1', name: 'VerificationEngine.Run', kind: 'METHOD', status: 'confirmed', file: 'aegisgraph/verifier.go:21', rel: 'CALLS' },
+        { id: 'consumer1', name: 'RiskReport.Evidence', kind: 'TYPE', status: 'confirmed', file: 'aegisgraph/model.go:52', rel: 'USES_TYPE' },
+        { id: 'dyn1', name: 'reflect.ValueOf() (Reflection)', kind: 'DYNAMIC', status: 'incomplete', file: 'internal/auth/registry.go:42', rel: 'DYNAMIC_DISPATCH' },
+        { id: 'dyn2', name: 'RuntimeHandlerMap', kind: 'REGISTRY', status: 'incomplete', file: 'internal/auth/registry.go:55', rel: 'RUNTIME_REGISTER' },
+        { id: 'warn1', name: 'W_WORKTREE_SNAPSHOT', kind: 'WARNING', status: 'incomplete', file: 'Entire Graph Engine', rel: 'EMITS_WARNING' }
       ],
       eventId: 'evt_1788685038140373400'
     },
     BLOCK: {
-      changeName: 'ValidateToken (Contract Broken)',
-      baseRef: 'HEAD~1',
-      headRef: 'HEAD',
+      changeName: 'ValidateToken (Breaking Signature)',
+      filePath: 'internal/auth/session.go:L18',
+      baseRef: 'HEAD~1 (829017f)',
+      headRef: 'HEAD (49956db)',
       decision: 'BLOCK',
-      reason: 'Deterministic verification failed: Downstream consumer contract test failed (Type mismatch in CheckoutService).',
-      confirmed: 4,
-      incomplete: 3,
+      reason: 'Deterministic verification failed: Downstream CheckoutService contract broken. Immediate rollback recommended.',
+      confirmedCount: 4,
+      incompleteCount: 3,
       verifyCount: 3,
       verificationPassed: false,
-      verificationOutput: '--- FAIL: TestTokenValidationContract (0.04s)\n    session_test.go:42: downstream consumer expected TokenPayload, received raw string',
-      warnings: [
-        'Dynamic registration / reflection detected',
-        'Downstream contract break detected across package boundary'
+      verificationTimeMs: 42,
+      verificationLogs: [
+        '[!] Evaluating changed signature: ValidateToken(token string) -> (bool, error)',
+        '[!] Downstream consumer: CheckoutService.ProcessOrder(auth.TokenPayload)',
+        '[✕] COMPILER/CONTRACT ERROR in session_test.go:42:',
+        '    cannot use token (variable of type string) as TokenPayload in argument to CheckoutService',
+        '[✕] --- FAIL: TestTokenValidationContract (0.04s)',
+        '--------------------------------------------------',
+        'VERIFICATION VERDICT: FAILED (CHANGE BLOCKED DUE TO CONTRACT BREAK)'
+      ],
+      nodes: [
+        { id: 'source', name: 'ValidateToken', kind: 'FUNCTION', status: 'changed', file: 'internal/auth/session.go' },
+        { id: 'break1', name: 'CheckoutService.ProcessOrder', kind: 'CONSUMER', status: 'broken', file: 'internal/checkout/order.go:88', rel: 'CONTRACT_FAIL' },
+        { id: 'caller1', name: 'SessionMiddleware', kind: 'CALLER', status: 'confirmed', file: 'internal/http/auth.go:12', rel: 'CALLS' },
+        { id: 'dyn1', name: 'DynamicHandlerRegistry', kind: 'DYNAMIC', status: 'incomplete', file: 'internal/auth/registry.go', rel: 'DYNAMIC_DISPATCH' },
       ],
       eventId: 'evt_1788685144275184200'
     }
@@ -80,199 +148,321 @@ export const App: React.FC = () => {
   const current = scenarioData[scenario];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw' }}>
-      {/* Sidebar */}
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', backgroundColor: 'var(--bg-primary)' }}>
+      {/* SIDEBAR */}
       <aside style={{
-        width: '260px',
+        width: '280px',
         backgroundColor: 'var(--bg-secondary)',
-        borderRight: '1px solid var(--border-color)',
+        borderRight: '1px solid var(--border-subtle)',
         display: 'flex',
         flexDirection: 'column',
-        padding: '24px 16px',
-        gap: '24px'
+        padding: '24px 18px',
+        gap: '24px',
+        zIndex: 10
       }}>
-        {/* Logo & Product Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '8px' }}>
+        {/* Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '0 6px' }}>
           <div style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #6366f1, #38bdf8)',
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            background: 'var(--brand-gradient)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 16px rgba(99, 102, 241, 0.4)'
+            boxShadow: '0 0 20px rgba(99, 102, 241, 0.45)'
           }}>
-            <Shield size={20} color="#fff" />
+            <Shield size={24} color="#fff" />
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.5px' }}>AEGISGRAPH</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Evidence Safety Layer</div>
+            <div style={{ fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.5px' }}>AEGISGRAPH</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.5px' }}>
+              SAFETY INTELLIGENCE
+            </div>
           </div>
         </div>
 
-        {/* Navigation Items */}
+        {/* Live Simulation Controls */}
+        <div style={{
+          padding: '16px',
+          borderRadius: '12px',
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1px solid var(--border-subtle)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}>
+          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            DEMO SCENARIO CONTROL
+          </div>
+          
+          <button
+            onClick={() => runLiveAnalysis('NORMAL')}
+            disabled={isAnalyzing}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: scenario === 'NORMAL' ? '1px solid var(--accent-cyan)' : '1px solid transparent',
+              background: scenario === 'NORMAL' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255,255,255,0.02)',
+              color: scenario === 'NORMAL' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={16} color="var(--accent-cyan)" />
+              1. Normal Change
+            </span>
+            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(56,189,248,0.2)', color: 'var(--accent-cyan)' }}>REVIEW</span>
+          </button>
+
+          <button
+            onClick={() => runLiveAnalysis('CURVEBALL')}
+            disabled={isAnalyzing}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: scenario === 'CURVEBALL' ? '1px solid var(--accent-amber)' : '1px solid transparent',
+              background: scenario === 'CURVEBALL' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.02)',
+              color: scenario === 'CURVEBALL' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Flame size={16} color="var(--accent-amber)" />
+              2. Curveball Dynamic
+            </span>
+            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(245,158,11,0.2)', color: 'var(--accent-amber)' }}>REVIEW</span>
+          </button>
+
+          <button
+            onClick={() => runLiveAnalysis('BLOCK')}
+            disabled={isAnalyzing}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: scenario === 'BLOCK' ? '1px solid var(--accent-rose)' : '1px solid transparent',
+              background: scenario === 'BLOCK' ? 'rgba(244, 63, 94, 0.18)' : 'rgba(255,255,255,0.02)',
+              color: scenario === 'BLOCK' ? '#fff' : 'var(--text-secondary)',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <XCircle size={16} color="var(--accent-rose)" />
+              3. Contract Break
+            </span>
+            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: 'rgba(244,63,94,0.2)', color: 'var(--accent-rose)' }}>BLOCK</span>
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {[
-            { id: 'overview', label: 'Overview', icon: Activity },
-            { id: 'graph', label: 'Graph Evidence', icon: Layers },
-            { id: 'verification', label: 'Verification', icon: CheckCircle2 },
-            { id: 'checkpoints', label: 'Checkpoints', icon: RotateCcw },
-            { id: 'events', label: 'Risk Events', icon: Database },
+            { id: 'overview', label: 'Safety Overview', icon: Activity },
+            { id: 'graph', label: 'Graph Topology', icon: Layers },
+            { id: 'verification', label: 'Deterministic Verifier', icon: CheckCircle2 },
+            { id: 'checkpoints', label: 'Entire Checkpoints', icon: RotateCcw },
+            { id: 'events', label: 'Databricks Telemetry', icon: Database },
           ].map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as ActiveTab)}
+                onClick={() => setActiveTab(tab.id as TabType)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '12px',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  borderRadius: '10px',
                   border: 'none',
-                  background: isActive ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                  background: isActive ? 'linear-gradient(90deg, rgba(99, 102, 241, 0.18), transparent)' : 'transparent',
+                  borderLeft: isActive ? '3px solid var(--accent-cyan)' : '3px solid transparent',
                   color: isActive ? '#fff' : 'var(--text-secondary)',
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: '0.9rem',
+                  fontWeight: isActive ? 700 : 500,
+                  fontSize: '0.88rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <Icon size={18} color={isActive ? '#38bdf8' : 'var(--text-muted)'} />
+                <Icon size={18} color={isActive ? 'var(--accent-cyan)' : 'var(--text-muted)'} />
                 {tab.label}
               </button>
             );
           })}
         </nav>
 
-        {/* Core Tagline Badge */}
+        {/* Provenance Box */}
         <div style={{
           marginTop: 'auto',
-          padding: '14px',
-          borderRadius: '10px',
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
-          border: '1px solid var(--border-color)',
-          fontSize: '0.78rem',
-          color: 'var(--text-secondary)'
+          padding: '16px',
+          borderRadius: '12px',
+          background: 'rgba(13, 18, 29, 0.8)',
+          border: '1px solid var(--border-subtle)',
+          fontSize: '0.78rem'
         }}>
-          <div style={{ fontWeight: 700, color: 'var(--accent-blue)', marginBottom: '4px' }}>Core Principle:</div>
-          "Entire Graph is evidence — not an oracle."
-          <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid rgba(51,65,85,0.4)', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-            Entire Graph: <span style={{ color: '#fff' }}>v0.4.0</span><br />
-            Engine: <span style={{ color: '#fff' }}>AegisGraph v1.0</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, color: 'var(--accent-cyan)', marginBottom: '8px' }}>
+            <Radio size={14} className="live-pulse" color="var(--accent-emerald)" />
+            Zero-Egress Graph
+          </div>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.4, fontSize: '0.75rem' }}>
+            "Entire Graph is evidence — never an infallible oracle."
+          </p>
+          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
+            <span>Graph: <b style={{ color: '#fff' }}>v0.4.0</b></span>
+            <span>Engine: <b style={{ color: '#fff' }}>Go 1.26</b></span>
           </div>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* MAIN VIEWPORT */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflowY: 'auto' }}>
-        {/* Top Header */}
+        
+        {/* TOP STATUS BAR */}
         <header style={{
-          padding: '16px 32px',
-          borderBottom: '1px solid var(--border-color)',
+          padding: '16px 36px',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: 'rgba(15, 23, 42, 0.4)',
-          backdropFilter: 'blur(12px)'
+          backgroundColor: 'rgba(13, 18, 29, 0.6)',
+          backdropFilter: 'blur(20px)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 20
         }}>
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700 }}>AI Code Change Safety Intelligence</h1>
-            <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Graph evidence → verification → decision
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.3px' }}>
+                AI Code Change Safety Intelligence
+              </h1>
+              {isAnalyzing && (
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: 'rgba(56, 189, 248, 0.2)',
+                  color: 'var(--accent-cyan)',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <Clock size={12} className="live-pulse" />
+                  ANALYZING GRAPH IMPACT...
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+              Autonomous blast-radius gate with deterministic contract verification & checkpoint recovery
             </p>
           </div>
 
-          {/* Scenario Selector & Status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.6)', padding: '4px 6px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', paddingLeft: '8px', paddingRight: '4px' }}>
-                DEMO SCENARIO:
-              </span>
-              {(['NORMAL', 'CURVEBALL', 'BLOCK'] as Scenario[]).map(sc => (
-                <button
-                  key={sc}
-                  onClick={() => setScenario(sc)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '6px',
-                    border: 'none',
-                    fontWeight: 600,
-                    fontSize: '0.78rem',
-                    cursor: 'pointer',
-                    background: scenario === sc 
-                      ? (sc === 'BLOCK' ? 'var(--accent-red)' : sc === 'CURVEBALL' ? 'var(--accent-amber)' : 'var(--accent-blue)')
-                      : 'transparent',
-                    color: scenario === sc ? '#090d16' : 'var(--text-secondary)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  {sc}
-                </button>
-              ))}
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <button
+              onClick={() => runLiveAnalysis(scenario)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-subtle)',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                color: '#fff',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <Play size={14} color="var(--accent-cyan)" />
+              Re-evaluate
+            </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--accent-green)', boxShadow: '0 0 8px var(--accent-green)' }} />
-                Online / Local
+              <span style={{ padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)' }}>
+                repo: <b style={{ color: '#fff' }}>entire-graph</b>
               </span>
-              <span style={{ color: 'var(--border-color)' }}>|</span>
-              <span>repo: <code style={{ color: '#fff' }}>entire-graph</code></span>
-              <span style={{ color: 'var(--border-color)' }}>|</span>
-              <span>branch: <code style={{ color: '#fff' }}>main</code></span>
+              <span style={{ padding: '4px 10px', borderRadius: '6px', backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid var(--border-subtle)' }}>
+                branch: <b style={{ color: '#fff' }}>main</b>
+              </span>
             </div>
           </div>
         </header>
 
-        {/* Dashboard Content Container */}
-        <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '28px' }}>
-          
-          {/* Pipeline Visualizer */}
-          <div className="glass-panel" style={{ padding: '20px 24px' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '16px' }}>
-              Autonomous Safety Pipeline
-            </div>
+        {/* DASHBOARD BODY */}
+        <div style={{ padding: '36px', display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '1600px', margin: '0 auto', width: '100%' }}>
+
+          {/* DYNAMIC PIPELINE SCANNER */}
+          <div className="glass-panel" style={{ padding: '24px 28px', position: 'relative', overflow: 'hidden' }}>
+            {isAnalyzing && <div className="scanner-line" />}
             
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                AUTONOMOUS SAFETY PIPELINE EXECUTION
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono' }}>
+                Step {activePipelineStep} of 6 Complete
+              </span>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
               {[
-                { step: '1', title: 'CODE CHANGE', desc: current.changeName.substring(0, 18) + '...', color: 'var(--accent-purple)' },
-                { step: '2', title: 'SEMANTIC DIFF', desc: 'Diff entity parser', color: 'var(--accent-blue)' },
-                { step: '3', title: 'GRAPH IMPACT', desc: `${current.confirmed} Confirmed edges`, color: 'var(--accent-blue)' },
-                { step: '4', title: 'EVIDENCE', desc: `${current.incomplete} Incomplete/heuristic`, color: 'var(--accent-amber)' },
-                { step: '5', title: 'VERIFICATION', desc: current.verificationPassed ? 'PASS' : 'FAIL', color: current.verificationPassed ? 'var(--accent-green)' : 'var(--accent-red)' },
-                { step: '6', title: 'DECISION', desc: current.decision, color: current.decision === 'BLOCK' ? 'var(--accent-red)' : 'var(--accent-amber)' },
+                { step: 1, title: 'CODE CHANGE', desc: 'Diff extraction', active: activePipelineStep >= 1, color: 'var(--accent-indigo)' },
+                { step: 2, title: 'SEMANTIC DIFF', desc: 'Symbol AST parsing', active: activePipelineStep >= 2, color: 'var(--accent-cyan)' },
+                { step: 3, title: 'GRAPH IMPACT', desc: `${current.confirmedCount} Verified edges`, active: activePipelineStep >= 3, color: 'var(--accent-cyan)' },
+                { step: 4, title: 'EVIDENCE CLASSIFIER', desc: `${current.incompleteCount} Incomplete/Heuristic`, active: activePipelineStep >= 4, color: 'var(--accent-amber)' },
+                { step: 5, title: 'VERIFICATION ENGINE', desc: current.verificationPassed ? 'PASS' : 'FAIL', active: activePipelineStep >= 5, color: current.verificationPassed ? 'var(--accent-emerald)' : 'var(--accent-rose)' },
+                { step: 6, title: 'RISK DECISION', desc: current.decision, active: activePipelineStep >= 6, color: current.decision === 'BLOCK' ? 'var(--accent-rose)' : 'var(--accent-amber)' },
               ].map((stage, idx, arr) => (
                 <React.Fragment key={stage.step}>
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: '8px',
+                    gap: '10px',
                     zIndex: 2,
-                    minWidth: '130px'
+                    minWidth: '140px',
+                    opacity: stage.active ? 1 : 0.35,
+                    transform: stage.active ? 'scale(1)' : 'scale(0.95)',
+                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
                   }}>
                     <div style={{
-                      width: '36px',
-                      height: '36px',
+                      width: '40px',
+                      height: '40px',
                       borderRadius: '50%',
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: `2px solid ${stage.color}`,
+                      backgroundColor: stage.active ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.02)',
+                      border: `2px solid ${stage.active ? stage.color : 'var(--border-subtle)'}`,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '0.85rem',
+                      fontWeight: 800,
+                      fontSize: '0.9rem',
                       color: stage.color,
-                      boxShadow: `0 0 12px ${stage.color}33`
+                      boxShadow: stage.active ? `0 0 16px ${stage.color}40` : 'none'
                     }}>
                       {stage.step}
                     </div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, textAlign: 'center' }}>{stage.title}</div>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 800, textAlign: 'center', letterSpacing: '0.2px' }}>{stage.title}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center' }}>{stage.desc}</div>
                   </div>
 
@@ -280,9 +470,10 @@ export const App: React.FC = () => {
                     <div style={{
                       flex: 1,
                       height: '2px',
-                      background: 'linear-gradient(90deg, rgba(56,189,248,0.4), rgba(129,140,248,0.4))',
+                      background: stage.active ? 'linear-gradient(90deg, var(--accent-cyan), var(--accent-indigo))' : 'rgba(255,255,255,0.06)',
                       margin: '0 8px',
-                      marginTop: '-28px'
+                      marginTop: '-32px',
+                      transition: 'all 0.3s ease'
                     }} />
                   )}
                 </React.Fragment>
@@ -290,118 +481,134 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* MAIN HERO CARD: CURRENT CHANGE ANALYSIS */}
-          <div className="glass-panel" style={{ padding: '28px', borderLeft: `4px solid ${current.decision === 'BLOCK' ? 'var(--accent-red)' : 'var(--accent-amber)'}` }}>
+          {/* MAIN HERO CARD */}
+          <div className="glass-panel" style={{
+            padding: '32px',
+            borderLeft: `5px solid ${current.decision === 'BLOCK' ? 'var(--accent-rose)' : 'var(--accent-amber)'}`,
+            boxShadow: current.decision === 'BLOCK' ? '0 0 40px rgba(244,63,94,0.1)' : '0 0 40px rgba(245,158,11,0.08)'
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>CURRENT CHANGE ANALYSIS</span>
-                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(51, 65, 85, 0.4)', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.6px' }}>CURRENT EVALUATION ARTIFACT</span>
+                  <span style={{ fontSize: '0.75rem', padding: '2px 10px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)', fontFamily: 'JetBrains Mono' }}>
                     {current.baseRef} → {current.headRef}
                   </span>
                 </div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <FileCode2 size={24} color="#38bdf8" />
+                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <FileCode2 size={28} color="var(--accent-cyan)" />
                   {current.changeName}
                 </h2>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px', fontFamily: 'JetBrains Mono' }}>
+                  Location: <span style={{ color: '#fff' }}>{current.filePath}</span>
+                </div>
               </div>
 
-              {/* Decision Badge */}
-              <div style={{ textAlign: 'right' }}>
-                <div className={current.decision === 'BLOCK' ? 'badge-block' : 'badge-review'} style={{
-                  padding: '8px 24px',
-                  borderRadius: '10px',
-                  fontSize: '1.2rem',
-                  fontWeight: 800,
+              {/* Huge Decision Pill */}
+              <div>
+                <div style={{
+                  padding: '12px 32px',
+                  borderRadius: '12px',
+                  fontSize: '1.4rem',
+                  fontWeight: 900,
                   letterSpacing: '1px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '12px',
+                  background: current.decision === 'BLOCK' ? 'rgba(244, 63, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: current.decision === 'BLOCK' ? 'var(--accent-rose)' : 'var(--accent-amber)',
+                  border: `2px solid ${current.decision === 'BLOCK' ? 'var(--accent-rose)' : 'var(--accent-amber)'}`,
+                  boxShadow: current.decision === 'BLOCK' ? '0 0 24px rgba(244,63,94,0.3)' : '0 0 24px rgba(245,158,11,0.2)'
                 }}>
-                  {current.decision === 'BLOCK' ? <XCircle size={20} /> : <AlertTriangle size={20} />}
+                  {current.decision === 'BLOCK' ? <XCircle size={26} /> : <AlertTriangle size={26} />}
                   {current.decision}
                 </div>
               </div>
             </div>
 
-            {/* Decision Reason */}
+            {/* Decision Reason Callout */}
             <div style={{
-              margin: '20px 0',
-              padding: '14px 18px',
-              backgroundColor: 'rgba(15, 23, 42, 0.5)',
-              borderRadius: '8px',
-              border: '1px solid rgba(51, 65, 85, 0.5)',
-              fontSize: '0.9rem',
+              margin: '24px 0',
+              padding: '18px 22px',
+              backgroundColor: 'rgba(7, 9, 14, 0.6)',
+              borderRadius: '10px',
+              border: '1px solid var(--border-subtle)',
+              fontSize: '0.95rem',
               lineHeight: 1.5,
-              color: '#cbd5e1'
+              color: '#e2e8f0'
             }}>
-              <span style={{ fontWeight: 700, color: '#fff' }}>Decision Reason: </span>
+              <span style={{ fontWeight: 800, color: 'var(--accent-cyan)' }}>EXPLAINABLE VERDICT: </span>
               {current.reason}
             </div>
 
-            {/* Metric Summary Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginTop: '24px' }}>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>CONFIRMED EVIDENCE</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-green)', marginTop: '4px' }}>{current.confirmed}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Direct structural callers & consumers</div>
+            {/* Key Metrics Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '18px', marginTop: '24px' }}>
+              <div style={{ padding: '20px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>CONFIRMED STRUCTURAL</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--accent-emerald)', marginTop: '4px' }}>{current.confirmedCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>Direct callers & concrete consumers</div>
               </div>
 
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>INCOMPLETE EVIDENCE</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--accent-amber)', marginTop: '4px' }}>{current.incomplete}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Dynamic / Reflection / Warnings</div>
+              <div style={{ padding: '20px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>INCOMPLETE / HEURISTIC</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: 'var(--accent-amber)', marginTop: '4px' }}>{current.incompleteCount}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>Curveball dynamic / warnings</div>
               </div>
 
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>DETERMINISTIC VERIFICATION</div>
-                <div style={{ fontSize: '1.8rem', fontWeight: 800, color: current.verificationPassed ? 'var(--accent-green)' : 'var(--accent-red)', marginTop: '4px' }}>
+              <div style={{ padding: '20px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>CONTRACT VERIFICATION</div>
+                <div style={{ fontSize: '2.2rem', fontWeight: 900, color: current.verificationPassed ? 'var(--accent-emerald)' : 'var(--accent-rose)', marginTop: '4px' }}>
                   {current.verificationPassed ? 'PASS' : 'FAIL'}
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>go vet / tests / contract checks</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>Compiler, go vet, and contract tests</div>
               </div>
 
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>STABLE RECOVERY CHECKPOINT</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8', marginTop: '6px', fontFamily: 'JetBrains Mono' }}>
+              <div style={{ padding: '20px', borderRadius: '10px', backgroundColor: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>STABLE RECOVERY CHECKPOINT</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--accent-cyan)', marginTop: '8px', fontFamily: 'JetBrains Mono' }}>
                   cdca4eeb37ef
                 </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>Pre-Curveball baseline</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '6px' }}>Known-safe pre-Curveball snapshot</div>
               </div>
             </div>
 
-            {/* Recovery Action if Blocked */}
+            {/* BLOCK RECOVERY ACTION BANNER */}
             {current.decision === 'BLOCK' && (
               <div style={{
-                marginTop: '20px',
-                padding: '16px',
-                borderRadius: '8px',
-                background: 'rgba(248, 113, 113, 0.1)',
-                border: '1px solid rgba(248, 113, 113, 0.4)',
+                marginTop: '24px',
+                padding: '20px 24px',
+                borderRadius: '10px',
+                background: 'rgba(244, 63, 94, 0.12)',
+                border: '1px solid rgba(244, 63, 94, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                boxShadow: '0 0 30px rgba(244,63,94,0.15)'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <RotateCcw size={24} color="var(--accent-red)" />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <RotateCcw size={32} color="var(--accent-rose)" />
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--accent-red)' }}>RECOVERY REQUIRED: Entire Checkpoint Available</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                      Safe state preserved at checkpoint <code style={{ color: '#fff' }}>cdca4eeb37ef</code>.
+                    <div style={{ fontWeight: 800, color: 'var(--accent-rose)', fontSize: '1.05rem' }}>
+                      INVARIANT BREACH DETECTED — RECOVERY GUIDANCE READY
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Safe repository state preserved at Entire Checkpoint <code style={{ color: '#fff', fontWeight: 700 }}>cdca4eeb37ef</code>.
                     </div>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowRecoveryModal(true)}
                   style={{
-                    padding: '8px 18px',
-                    borderRadius: '6px',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
                     border: 'none',
-                    backgroundColor: 'var(--accent-red)',
+                    backgroundColor: 'var(--accent-rose)',
                     color: '#fff',
-                    fontWeight: 700,
-                    fontSize: '0.82rem',
-                    cursor: 'pointer'
+                    fontWeight: 800,
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 0 16px rgba(244,63,94,0.4)',
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   View Recovery Checkpoint
@@ -410,193 +617,196 @@ export const App: React.FC = () => {
             )}
           </div>
 
-          {/* DUAL PANELS: GRAPH EVIDENCE + CURVEBALL INTEL */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '24px' }}>
+          {/* DUAL PANELS: GRAPH TOPOLOGY + DETERMINISTIC VERIFIER */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '28px' }}>
             
-            {/* Graph Visualization Panel */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Layers size={20} color="#38bdf8" />
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Structural Blast-Radius Evidence</h3>
+            {/* Interactive Graph Topology */}
+            <div className="glass-panel" style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Layers size={22} color="var(--accent-cyan)" />
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Structural Blast-Radius Graph</h3>
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Entire Graph v0.4.0 Engine</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono' }}>
+                  Entire Graph Provider: entire-graph v0.4.0
+                </div>
               </div>
 
-              {/* Graph Visual Mock Nodes */}
+              {/* Interactive Node Graph Map */}
               <div style={{
                 padding: '24px',
-                backgroundColor: 'rgba(9, 13, 22, 0.8)',
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)',
+                backgroundColor: 'rgba(7, 9, 14, 0.7)',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '16px'
               }}>
-                {/* Source Node */}
-                <div style={{
-                  padding: '12px 16px',
-                  backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                  border: '1px solid var(--accent-purple)',
-                  borderRadius: '8px',
-                  fontWeight: 700,
-                  fontSize: '0.85rem'
-                }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--accent-purple)' }}>SOURCE SYMBOL (DIFF)</div>
-                  {current.changeName}
+                <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-muted)' }}>
+                  EVALUATED RELATION NODES (Click to inspect):
                 </div>
 
-                {/* Edges & Targets */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div style={{
-                    padding: '12px',
-                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                    border: '1px solid rgba(52, 211, 153, 0.3)',
-                    borderRadius: '6px'
-                  }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--accent-green)', fontWeight: 700 }}>CONFIRMED CALLER</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '2px' }}>VerificationEngine.Run</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>verifier.go:21 (CALLS)</div>
-                  </div>
+                  {current.nodes.map(n => {
+                    const isSelected = selectedNode === n.id;
+                    let badgeColor = 'var(--accent-emerald)';
+                    let borderStyle = '1px solid rgba(16, 185, 129, 0.3)';
+                    let bgColor = 'rgba(16, 185, 129, 0.08)';
 
-                  <div style={{
-                    padding: '12px',
-                    backgroundColor: 'rgba(52, 211, 153, 0.1)',
-                    border: '1px solid rgba(52, 211, 153, 0.3)',
-                    borderRadius: '6px'
-                  }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--accent-green)', fontWeight: 700 }}>TYPE CONSUMER</div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '2px' }}>RiskReport</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>model.go:52 (USES_TYPE)</div>
-                  </div>
+                    if (n.status === 'changed') {
+                      badgeColor = 'var(--accent-indigo)';
+                      borderStyle = '1px solid var(--accent-indigo)';
+                      bgColor = 'rgba(99, 102, 241, 0.15)';
+                    } else if (n.status === 'incomplete') {
+                      badgeColor = 'var(--accent-amber)';
+                      borderStyle = '1px dashed rgba(245, 158, 11, 0.5)';
+                      bgColor = 'rgba(245, 158, 11, 0.08)';
+                    } else if (n.status === 'broken') {
+                      badgeColor = 'var(--accent-rose)';
+                      borderStyle = '1px solid var(--accent-rose)';
+                      bgColor = 'rgba(244, 63, 94, 0.18)';
+                    }
 
-                  <div style={{
-                    gridColumn: 'span 2',
-                    padding: '12px',
-                    backgroundColor: 'rgba(251, 191, 36, 0.1)',
-                    border: '1px dashed rgba(251, 191, 36, 0.4)',
-                    borderRadius: '6px'
-                  }}>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--accent-amber)', fontWeight: 700 }}>
-                      ⚠ INCOMPLETE / HEURISTIC (CURVEBALL)
-                    </div>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '2px' }}>
-                      Dynamic Dispatch / Runtime Registry
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      reflect.ValueOf() detected; static call graph cannot prove 100% consumer coverage.
-                    </div>
-                  </div>
+                    return (
+                      <div
+                        key={n.id}
+                        onClick={() => setSelectedNode(isSelected ? null : n.id)}
+                        style={{
+                          padding: '14px',
+                          borderRadius: '8px',
+                          background: bgColor,
+                          border: borderStyle,
+                          cursor: 'pointer',
+                          boxShadow: isSelected ? `0 0 16px ${badgeColor}50` : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: badgeColor }}>
+                            {n.kind} {n.rel && `(${n.rel})`}
+                          </span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{n.status.toUpperCase()}</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: '4px', color: '#fff' }}>
+                          {n.name}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px', fontFamily: 'JetBrains Mono' }}>
+                          {n.file}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '14px', lineHeight: 1.4 }}>
-                * Entire Graph provides deterministic structural evidence. AegisGraph refuses to assume incomplete graphs are complete.
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '16px', lineHeight: 1.5 }}>
+                <b style={{ color: '#fff' }}>Core Guarantee:</b> Confirmed edges represent deterministic graph relationships. Incomplete edges (dynamic/reflection) trigger mandatory verification instead of false certainty.
               </div>
             </div>
 
-            {/* Curveball Intelligence Card */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <AlertTriangle size={20} color="var(--accent-amber)" />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Curveball Response Engine</h3>
+            {/* Live Verifier Terminal */}
+            <div className="glass-panel" style={{ padding: '28px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Terminal size={22} color={current.verificationPassed ? 'var(--accent-emerald)' : 'var(--accent-rose)'} />
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Deterministic Verifier Log</h3>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono' }}>
+                  Latency: {current.verificationTimeMs}ms
+                </span>
               </div>
 
               <div style={{
-                padding: '14px',
-                backgroundColor: 'rgba(251, 191, 36, 0.08)',
-                border: '1px solid rgba(251, 191, 36, 0.3)',
-                borderRadius: '8px',
-                fontSize: '0.82rem',
-                color: '#fef3c7',
-                lineHeight: 1.5,
-                marginBottom: '16px'
+                flex: 1,
+                padding: '18px',
+                backgroundColor: '#04060a',
+                borderRadius: '10px',
+                border: '1px solid var(--border-subtle)',
+                fontFamily: 'JetBrains Mono',
+                fontSize: '0.78rem',
+                lineHeight: 1.6,
+                color: current.verificationPassed ? '#34d399' : '#f87171',
+                overflowY: 'auto',
+                minHeight: '260px'
               }}>
-                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Constraint Invalidation:</div>
-                "Static code graphs cannot prove completeness in presence of dynamic dispatch, reflection, or generated code."
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>ACTIVE GRAPH WARNINGS:</div>
-                {current.warnings.map((w, i) => (
-                  <div key={i} style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                    border: '1px solid var(--border-color)',
-                    fontSize: '0.75rem',
-                    color: '#e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    <Info size={14} color="#38bdf8" />
-                    {w}
+                <div style={{ color: 'var(--text-muted)', marginBottom: '8px' }}>$ aegisgraph --verify --timeout 2m</div>
+                {current.verificationLogs.map((log, i) => (
+                  <div key={i} style={{ color: log.startsWith('[✕]') ? 'var(--accent-rose)' : log.startsWith('[!]') ? 'var(--accent-amber)' : 'inherit' }}>
+                    {log}
                   </div>
                 ))}
-              </div>
-
-              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Telemetrics ID:</div>
-                <code style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{current.eventId}</code>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Sink: Local Lakehouse Fallback Active
-                </div>
               </div>
             </div>
 
           </div>
 
-          {/* VERIFICATION AND EVENT AUDIT ROW */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+          {/* TELEMETRY & CHECKPOINT AUDIT */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px' }}>
             
-            {/* Deterministic Verification Log */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Terminal size={20} color="#34d399" />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Deterministic Verification</h3>
+            {/* Databricks Architectural Risk Intelligence */}
+            <div className="glass-panel" style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Database size={22} color="var(--accent-cyan)" />
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Databricks Lakehouse Telemetry</h3>
+                </div>
+                <span style={{ fontSize: '0.72rem', padding: '2px 8px', borderRadius: '4px', background: 'rgba(56,189,248,0.15)', color: 'var(--accent-cyan)' }}>
+                  FALLBACK ACTIVE
+                </span>
               </div>
 
-              <pre style={{
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                Analysis events streamed to Delta table <code style={{ color: '#fff' }}>aegisgraph.analysis_events</code> (Local JSONL Fallback active).
+              </div>
+
+              <div style={{
                 padding: '16px',
-                backgroundColor: '#050811',
+                backgroundColor: 'rgba(7, 9, 14, 0.6)',
                 borderRadius: '8px',
-                border: '1px solid var(--border-color)',
-                fontSize: '0.78rem',
-                color: current.verificationPassed ? '#34d399' : '#f87171',
-                overflowX: 'auto',
-                lineHeight: 1.5,
-                minHeight: '120px'
+                fontFamily: 'JetBrains Mono',
+                fontSize: '0.75rem',
+                border: '1px solid var(--border-subtle)',
+                color: '#cbd5e1',
+                lineHeight: 1.6
               }}>
-                {`$ go test -short ./...\n` + current.verificationOutput}
-              </pre>
+                <div><b>event_id:</b> <span style={{ color: 'var(--accent-cyan)' }}>{current.eventId}</span></div>
+                <div><b>repository:</b> entire-graph</div>
+                <div><b>decision:</b> <span style={{ color: current.decision === 'BLOCK' ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>{current.decision}</span></div>
+                <div><b>confirmed_relationships:</b> {current.confirmedCount}</div>
+                <div><b>incomplete_relationships:</b> {current.incompleteCount}</div>
+                <div><b>verification_status:</b> {current.verificationPassed ? 'PASS' : 'FAIL'}</div>
+              </div>
             </div>
 
             {/* Checkpoint Provenance */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <RotateCcw size={20} color="#818cf8" />
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Entire Checkpoint Provenance</h3>
+            <div className="glass-panel" style={{ padding: '28px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                <RotateCcw size={22} color="var(--accent-indigo)" />
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Entire Checkpoint Provenance</h3>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ padding: '12px', borderRadius: '6px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
+                <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8' }}>cdca4eeb37ef</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--accent-green)' }}>● STABLE BASELINE</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-cyan)', fontFamily: 'JetBrains Mono' }}>
+                      cdca4eeb37ef
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', fontWeight: 700 }}>● STABLE BASELINE</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                     Commit: <code style={{ color: '#fff' }}>d347fa7</code> — chore: checkpoint stable pre-Curveball state
                   </div>
                 </div>
 
-                <div style={{ padding: '12px', borderRadius: '6px', backgroundColor: 'rgba(30, 41, 59, 0.4)', border: '1px solid var(--border-color)' }}>
+                <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fff' }}>Commit 49956db</span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>RELEASE</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fff', fontFamily: 'JetBrains Mono' }}>
+                      Commit 8e15a8d
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>RELEASE HEAD</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    fix: finalize AegisGraph buildathon verification and documentation
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    feat: add judge-facing AegisGraph dashboard
                   </div>
                 </div>
               </div>
@@ -607,57 +817,62 @@ export const App: React.FC = () => {
         </div>
       </main>
 
-      {/* RECOVERY MODAL FOR JUDGES */}
+      {/* RECOVERY MODAL */}
       {showRecoveryModal && (
         <div style={{
           position: 'fixed',
           inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(8px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(12px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 100
         }}>
-          <div className="glass-panel" style={{ width: '560px', padding: '32px', border: '1px solid var(--accent-red)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <RotateCcw size={28} color="var(--accent-red)" />
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>Entire Checkpoint Recovery Guidance</h3>
+          <div className="glass-panel" style={{
+            width: '600px',
+            padding: '36px',
+            border: '2px solid var(--accent-rose)',
+            boxShadow: '0 0 50px rgba(244,63,94,0.3)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+              <RotateCcw size={32} color="var(--accent-rose)" />
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 800 }}>Entire Checkpoint Recovery Guidance</h3>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '20px' }}>
-              The change was <strong style={{ color: 'var(--accent-red)' }}>BLOCKED</strong> because deterministic contract verification failed against downstream consumers.
-              AegisGraph protects the codebase by pointing directly to the last verified stable Entire checkpoint:
+            <p style={{ fontSize: '0.92rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '24px' }}>
+              The code change was <strong style={{ color: 'var(--accent-rose)' }}>BLOCKED</strong> because deterministic contract verification failed against downstream consumer dependencies.
+              AegisGraph has determined that the safest remediation path is rolling back to the last verified stable Entire Checkpoint:
             </p>
 
             <div style={{
-              padding: '16px',
-              backgroundColor: '#050811',
+              padding: '18px',
+              backgroundColor: '#04060a',
               borderRadius: '8px',
               fontFamily: 'JetBrains Mono',
-              fontSize: '0.85rem',
-              color: '#38bdf8',
-              marginBottom: '24px',
-              border: '1px solid var(--border-color)'
+              fontSize: '0.88rem',
+              color: 'var(--accent-cyan)',
+              marginBottom: '28px',
+              border: '1px solid var(--border-subtle)'
             }}>
               entire checkpoint explain cdca4eeb37ef
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button
                 onClick={() => setShowRecoveryModal(false)}
                 style={{
                   padding: '10px 24px',
                   borderRadius: '8px',
                   border: 'none',
-                  backgroundColor: 'rgba(51, 65, 85, 0.8)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
                   color: '#fff',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer'
                 }}
               >
-                Close Modal
+                Close Guidance
               </button>
             </div>
           </div>
