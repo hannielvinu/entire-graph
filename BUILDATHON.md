@@ -143,3 +143,14 @@ go test -v ./...
 
 - Dynamic pattern detection currently relies on heuristic symbol and source pattern matching.
 - Future versions will support cross-language multi-repository invariant enforcement and direct Databricks REST client auto-provisioning.
+
+
+## Final Entire Checkpoint Note
+
+AegisGraph implementation is complete and verified. The final implementation commit is `1781ee5`.
+
+Entire Graph is used as structural evidence for semantic diff, impact analysis, and relationship analysis. AegisGraph explicitly distinguishes confirmed evidence from incomplete/heuristic evidence and requires deterministic verification before making safety decisions.
+
+The Curveball response preserves fully resolved Graph behavior while routing incomplete analysis through verification and REVIEW/BLOCK decisions.
+
+The stable pre-Curveball Entire checkpoint is `cdca4eeb37ef`. The final implementation was committed outside an Entire agent session, so commit `1781ee5` does not contain an Entire-Checkpoint trailer. This limitation is documented rather than reconstructed or fabricated.
