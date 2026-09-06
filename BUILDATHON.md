@@ -2,156 +2,144 @@
 
 ## One-sentence summary
 
-AegisGraph is a developer safety layer for AI coding agents that uses Entire Graph to analyze the downstream blast radius of code changes and Entire Checkpoints to preserve and recover development context when a contract or invariant is broken.
+AegisGraph is an evidence-driven safety layer for AI coding agents that utilizes Entire Graph structural intelligence to calculate blast radius, classifies evidence completeness against dynamic/runtime edge cases (Curveball response), executes deterministic contract verification, produces explainable SAFE / REVIEW / BLOCK decisions, enables Entire Checkpoint rollbacks, and streams architectural risk events to Databricks.
 
 ## Problem, intended user and why it matters
 
-AI coding agents can make locally correct changes that silently break downstream consumers elsewhere in a codebase.
+AI coding agents can generate modifications that appear locally correct but silently break downstream contracts or invariants in non-trivial repositories. 
 
-The intended user is a developer using an AI coding agent on a non-trivial repository.
-
-AegisGraph aims to detect these downstream contract risks before they become uncontrolled repair loops, provide evidence for the affected code, and preserve a known-good development state for recovery.
+The intended user is a software engineer or AI pair-programming agent working on multi-package codebases. AegisGraph ensures that agent changes do not trigger uncontrolled failure loops by grounding safety decisions in structural code graphs and deterministic tests, rather than blind heuristics.
 
 ## Selected Entire track and why Entire is essential
 
-Selected track: Track 2 — Build with Graph Intelligence.
+**Track 2 — Build with Graph Intelligence.**
 
-Entire is essential because AegisGraph uses the structural relationships in the Entire Graph to identify downstream callers, consumers and affected parts of the codebase.
+Entire Graph is the foundational engine of AegisGraph. It provides deterministic, zero-egress structural analysis including entity-level semantic diffs, caller/callee traversals, type consumer mapping, and data flow tracking.
 
-The product does not use Entire merely for tracking. Graph evidence is converted into an actionable blast-radius and change-risk analysis that can be verified against source code and tests.
+AegisGraph transforms raw Graph data into actionable decisioning:
+1. Translates Graph relations into confirmed structural evidence.
+2. Identifies when Graph evidence is incomplete (dynamic dispatch, reflection, registration, warnings).
+3. Gates code changes with deterministic verification.
+4. Leverages Entire Checkpoints for rollback and recovery when contracts fail.
 
 ## Architecture and main workflow
 
-Planned architecture:
+```
+AGENT / CODE CHANGE
+        |
+        v
+ENTIRE GRAPH SEMANTIC DIFF (`entire graph diff --json`)
+        |
+        v
+ENTIRE GRAPH IMPACT ANALYSIS (`entire graph impact --format json`)
+        |
+        v
+EVIDENCE CLASSIFICATION ENGINE
+        |
+        +-------------------+-------------------+
+        |                                       |
+        v                                       v
+CONFIRMED STRUCTURAL EVIDENCE         INCOMPLETE / HEURISTIC EVIDENCE
+(Direct Callers, Type Consumers)      (Dynamic Dispatch, Reflection, Warnings)
+        |                                       |
+        +-------------------+-------------------+
+                            |
+                            v
+               DETERMINISTIC VERIFICATION
+               (go vet, unit tests, contracts)
+                            |
+                            v
+                   RISK DECISION ENGINE
+                            |
+        +-------------------+-------------------+
+        |                   |                   |
+      SAFE                REVIEW              BLOCK
+(All Confirmed +      (Incomplete/         (Verification
+ Verification PASS)   Uncertain Graph)      Failed)
+        |                   |                   |
+        +-------------------+-------------------+
+                            |
+                            v
+                 STRUCTURED ANALYSIS EVENT
+                            |
+                            v
+            DATABRICKS LAKEHOUSE / LOCAL SINK
+```
 
-Coding Agent
-    |
-    v
-AegisGraph
-    |
-    v
-Entire Graph
-    |
-    v
-Blast-Radius Analysis
-    |
-    v
-Deterministic Contract / Invariant Verification
-    |
-    +---- PASS ----> Continue / checkpoint
-    |
-    +---- FAIL ----> Recovery + scoped repair guidance
+## Entire Graph findings and capabilities used
 
-The initial implementation will prioritize a narrow end-to-end workflow rather than a large feature set.
-
-## Entire Graph findings and verification
-
-[TO BE COMPLETED DURING THE BUILD]
-
-Record:
-- Graph searches performed
-- Definitions identified
-- Relationships identified
-- Impact analysis results
-- How findings were verified against source code
-- How findings were verified against tests
+Actual Entire Graph commands utilized:
+- `entire graph version --json`: Identified plugin version `v0.4.0`.
+- `entire graph diff --base <base> --head <head> --json`: Entity-level semantic diff identifying changed files, symbol types, and dependent counts.
+- `entire graph impact --symbol <symbol> --repo <path> --format json`: Deep blast-radius analysis extracting callers, callees, type consumers, data flows, and completeness warnings.
+- `entire checkpoints list`: Discovers available and stable checkpoints for rollback guidance.
+- `entire checkpoint explain <id>`: Inspects session and commit metadata for safe recovery points.
 
 ## Noon Curveball: what changed and how we adapted
 
-[TO BE COMPLETED AFTER THE NOON CURVEBALL]
+### The Curveball Constraint
+*"Graph is evidence, not an oracle."* Codebases frequently feature dynamic dispatch, runtime handler registries, reflection, generated code, and partial analysis where static graphs cannot guarantee 100% completeness. "No relationship found" cannot be assumed to mean "no relationship exists."
 
-Record:
-- Original assumption
-- Official Curveball constraint
-- Affected architecture
-- Graph impact analysis
-- Implementation change
-- Tests added or changed
-- Final verification
+### Invalidation of Previous Assumption
+- **Old Assumption:** "If Entire Graph reports a relationship set, that set is complete and authoritative."
+- **Invalidated By:** Dynamic runtime registration, Go `reflect`, interface dispatch, and analysis budget warnings.
+- **New Behavior:** AegisGraph treats Graph output as structural evidence. If dynamic patterns, reflection, or graph warnings are detected, evidence is classified as `INCOMPLETE`, prompting mandatory deterministic verification and escalating clean changes to `REVIEW`.
+
+## Evidence Classification
+
+- **CONFIRMED:** Structural relationships directly proven by Entire Graph (e.g., direct call graph, concrete type consumption, data flow edges).
+- **INCOMPLETE / HEURISTIC:** Unresolved dynamic dispatch, runtime registration (`reflect`, registry maps), generated code, or Graph analysis warnings.
+- **VERIFY:** Required verification targets (targeted tests, compiler checks) before an agent's change can be accepted.
+
+## Decision Rules
+
+- **SAFE:** All relationships are CONFIRMED by Entire Graph, no incomplete patterns detected, and deterministic verification PASSES.
+- **REVIEW:** Incomplete/heuristic evidence exists (Curveball condition) or large unverified blast radius detected, requiring human inspection.
+- **BLOCK:** Deterministic verification FAILS or contract break detected. Recovery recommendation to a stable Entire Checkpoint is generated.
 
 ## Checkpoint links and what each checkpoint proves
 
-### Checkpoint 1 — Initial understanding and architecture
-
-[TO BE COMPLETED]
-
-Proves:
-- Original problem understanding
-- Intended architecture
-- Initial assumptions
-
-### Checkpoint 2 — Pre-noon stable state
-
-[TO BE COMPLETED]
-
-Proves:
-- Last stable implementation before the Curveball
-- Current architecture
-- Completed functionality
-- Remaining risks
-
-### Checkpoint 3 — Curveball response
-
-[TO BE COMPLETED]
-
-Proves:
-- How the project adapted to the new constraint
-- Graph evidence used
-- Changed implementation
-- Verification
-
-### Checkpoint 4 — Final implementation and verification
-
-[TO BE COMPLETED]
-
-Proves:
-- Final implementation
-- Tests
-- Graph evidence
-- Final semantic verification
+- **`cdca4eeb37ef` (Pre-Curveball Stable Baseline):** Stable baseline commit `d347fa7` prior to Curveball injection.
+- **AegisGraph Milestones:** Integration of Entire Graph adapters, evidence classification engine, deterministic verifier, Curveball dynamic handler, Databricks telemetry sink, and automated test suite.
 
 ## Setup, run and test instructions
 
-[TO BE COMPLETED AFTER IMPLEMENTATION]
+### Prerequisites
+- Go 1.22+ (tested with Go 1.26)
+- Entire CLI with `entire-graph` plugin
 
-Document:
-- Required tools
-- Installation
-- Configuration
-- How to run AegisGraph
-- How to run the demo
-- How to run tests
-- Expected output
+### Building AegisGraph
+```bash
+cd aegisgraph
+go build -o ../bin/aegisgraph.exe ./cmd
+```
 
-## Databricks use, data sources and limitations
+### Running Tests
+```bash
+cd aegisgraph
+go test -v ./...
+```
 
-Databricks: [NOT CURRENTLY PLANNED / TO BE DECIDED]
+### Running AegisGraph Analysis
+```bash
+# Standard analysis
+.\bin\aegisgraph.exe --repo . --base HEAD~1 --head HEAD
 
-If Databricks is used, document:
-- Databricks capability used
-- Why it is essential
-- Workspace/app/endpoint
-- Data sources
-- Data provenance
-- Reproduction steps
-- Limitations
-- Curveball impact
+# Curveball incomplete-evidence + contract-break simulation
+.\bin\aegisgraph.exe --simulate-curveball --simulate-verification-fail
+
+# Machine-readable JSON output
+.\bin\aegisgraph.exe --json
+```
+
+## Databricks integration
+
+- **Integration Mode:** Dual-mode architecture supporting live Databricks Lakehouse SQL Warehouses and deterministic Local JSONL Sink (`aegisgraph_events.jsonl`).
+- **Telemetry Event Schema:** Includes `event_id`, `timestamp`, `repository`, `commit`, `checkpoint`, `changed_symbols`, `impacted_symbols`, `confirmed_relationships`, `incomplete_relationships`, `verification_status`, `decision`, `decision_reason`, `recovery_required`, `curveball_mode`, and `analysis_version`.
+- **SQL Analytics:** Provided in `aegisgraph/databricks_schema.sql` for computing blocked change frequency, incomplete graph analysis rates, and checkpoint recovery trends.
+- **Status in Environment:** Live Databricks ingestion was unauthenticated in this environment; deterministic Lakehouse JSONL fallback active and verified.
 
 ## Known limitations and next steps
 
-Initial limitations:
-
-- The first implementation will focus on a narrow developer workflow.
-- Deterministic invariant verification will initially target a limited set of contract types.
-- Automated repair will be scoped to the demonstrated workflow.
-- The prototype will prioritize reliable evidence and reproducibility over broad language/framework coverage.
-
-Future directions:
-
-- Broader language support
-- More invariant types
-- Stronger agent integration
-- Progressive scope narrowing
-- Richer Graph visualization
-- Cross-repository organizational invariants
-- Optional Databricks-backed telemetry and analysis
+- Dynamic pattern detection currently relies on heuristic symbol and source pattern matching.
+- Future versions will support cross-language multi-repository invariant enforcement and direct Databricks REST client auto-provisioning.
