@@ -7,3 +7,13 @@ __pycache__/
 /bench/.cache/
 # Per-run benchmark reports are local-only working data, not version-controlled.
 /bench/results/
+
+# AegisGraph artifacts
+aegisgraph/bin/
+aegisgraph/aegisgraph_events.jsonl
+aegisgraph_events.jsonl
+bin/
+
+# Dashboard dependencies & builds
+dashboard/node_modules/
+dashboard/dist/
