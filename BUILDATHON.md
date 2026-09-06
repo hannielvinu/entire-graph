@@ -1,4 +1,4 @@
-# AegisGraph
+# AegisGraph — Autonomous Invariant-Guardrail & Time-Traveling Remediation Engine
 
 ## One-sentence summary
 
@@ -109,27 +109,37 @@ Actual Entire Graph commands utilized:
 - Entire CLI with `entire-graph` plugin
 
 ### Building AegisGraph
-```bash
+```powershell
 cd aegisgraph
-go build -o ../bin/aegisgraph.exe ./cmd
+go build -o bin\aegisgraph.exe ./cmd
 ```
 
 ### Running Tests
-```bash
+```powershell
 cd aegisgraph
 go test -v ./...
 ```
 
 ### Running AegisGraph Analysis
-```bash
-# Standard analysis
-.\bin\aegisgraph.exe --repo . --base HEAD~1 --head HEAD
 
-# Curveball incomplete-evidence + contract-break simulation
-.\bin\aegisgraph.exe --simulate-curveball --simulate-verification-fail
+#### 1. Normal Repository State (Review on Warnings/Worktree Analysis)
+```powershell
+.\aegisgraph\bin\aegisgraph.exe --repo . --base HEAD~1 --head HEAD
+```
 
-# Machine-readable JSON output
-.\bin\aegisgraph.exe --json
+#### 2. Curveball Dynamic Dispatch Simulation
+```powershell
+.\aegisgraph\bin\aegisgraph.exe --repo . --simulate-curveball
+```
+
+#### 3. Curveball + Contract Failure Block Simulation (With Checkpoint Recovery)
+```powershell
+.\aegisgraph\bin\aegisgraph.exe --repo . --simulate-curveball --simulate-verification-fail
+```
+
+#### 4. Machine-Readable JSON Output
+```powershell
+.\aegisgraph\bin\aegisgraph.exe --repo . --json
 ```
 
 ## Databricks integration
@@ -144,13 +154,9 @@ go test -v ./...
 - Dynamic pattern detection currently relies on heuristic symbol and source pattern matching.
 - Future versions will support cross-language multi-repository invariant enforcement and direct Databricks REST client auto-provisioning.
 
+## Final Entire Checkpoint & Commit Record
 
-## Final Entire Checkpoint Note
-
-AegisGraph implementation is complete and verified. The final implementation commit is `1781ee5`.
-
-Entire Graph is used as structural evidence for semantic diff, impact analysis, and relationship analysis. AegisGraph explicitly distinguishes confirmed evidence from incomplete/heuristic evidence and requires deterministic verification before making safety decisions.
-
-The Curveball response preserves fully resolved Graph behavior while routing incomplete analysis through verification and REVIEW/BLOCK decisions.
-
-The stable pre-Curveball Entire checkpoint is `cdca4eeb37ef`. The final implementation was committed outside an Entire agent session, so commit `1781ee5` does not contain an Entire-Checkpoint trailer. This limitation is documented rather than reconstructed or fabricated.
+- **GitHub Fork Repository:** `https://github.com/hannielvinu/entire-graph`
+- **Stable pre-Curveball Entire Checkpoint:** `cdca4eeb37ef` (Commit `d347fa7`)
+- **Final Release Commit:** `829017f` / subsequent release commit
+- **Entire Checkpoint Limitation Note:** The final implementation was completed and verified directly in the working environment outside an active Entire agent TUI session; hence the commit does not contain an Entire-Checkpoint trailer. This limitation is documented truthfully rather than fabricated.
