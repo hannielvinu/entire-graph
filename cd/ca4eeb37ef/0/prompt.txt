@@ -1,0 +1,16 @@
+We are at the stable pre-Curveball state of the Buildathon.
+
+The current repository must be checkpointed before we respond to the Curveball.
+
+First reconstruct the current project state from the existing Entire checkpoint/session context.
+
+Then:
+1. Inspect the current git status and confirm there are no unintended changes.
+2. Review the existing setup/architecture work.
+3. Create/save a meaningful Entire checkpoint representing the LAST STABLE PRE-CURVE-BALL state.
+4. Do NOT implement AegisGraph.
+5. Do NOT modify the existing Entire Graph source.
+6. Do NOT add Databricks yet.
+7. The purpose of this session is only to establish the stable checkpoint before the Curveball.
+
+After the checkpoint is created, report the checkpoint ID and the commit/state it represents.
