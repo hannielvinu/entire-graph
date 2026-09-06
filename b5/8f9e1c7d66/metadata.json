@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "b58f9e1c7d66",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "bench/memory/ci/summarize_run.py",
+    "bench/memory/run_locomo.sh",
+    "scripts/create-nightly-tag.sh",
+    "scripts/entire-graph-statusline.sh",
+    "scripts/entire-graph-statusline_test.sh",
+    "scripts/install-local.sh",
+    "scripts/release.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/b5/8f9e1c7d66/0/metadata.json",
+      "transcript": "/b5/8f9e1c7d66/0/full.jsonl",
+      "compact_transcript": "/b5/8f9e1c7d66/0/transcript.jsonl",
+      "content_hash": "/b5/8f9e1c7d66/0/content_hash.txt",
+      "prompt": "/b5/8f9e1c7d66/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 66904,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 747264,
+    "output_tokens": 5370,
+    "api_call_count": 25
+  }
+}

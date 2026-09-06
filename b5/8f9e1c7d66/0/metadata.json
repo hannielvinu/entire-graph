@@ -1,0 +1,72 @@
+{
+  "cli_version": "0.10.5",
+  "checkpoint_id": "b58f9e1c7d66",
+  "session_id": "01a07556-78a0-7080-80e0-b33b65809331",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-06T06:39:16.7501932Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "bench/memory/ci/summarize_run.py",
+    "bench/memory/run_locomo.sh",
+    "scripts/create-nightly-tag.sh",
+    "scripts/entire-graph-statusline.sh",
+    "scripts/entire-graph-statusline_test.sh",
+    "scripts/install-local.sh",
+    "scripts/release.sh"
+  ],
+  "agent": "Codex",
+  "model": "gpt-5.6-luna",
+  "turn_id": "d589d1d65a21",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 66904,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 747264,
+    "output_tokens": 5370,
+    "api_call_count": 25
+  },
+  "session_metrics": {
+    "turn_count": 1
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-06T06:39:16.5481271Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 2365,
+    "total_committed": 0,
+    "total_lines_changed": 2365,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2365,
+      "user_lines_removed": 2365,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        "bench/memory/ci/summarize_run.py": 642,
+        "bench/memory/run_locomo.sh": 61,
+        "scripts/create-nightly-tag.sh": 36,
+        "scripts/entire-graph-statusline.sh": 547,
+        "scripts/entire-graph-statusline_test.sh": 957,
+        "scripts/install-local.sh": 15,
+        "scripts/release.sh": 107
+      },
+      "user_removed_per_file": {
+        "bench/memory/ci/summarize_run.py": 642,
+        "bench/memory/run_locomo.sh": 61,
+        "scripts/create-nightly-tag.sh": 36,
+        "scripts/entire-graph-statusline.sh": 547,
+        "scripts/entire-graph-statusline_test.sh": 957,
+        "scripts/install-local.sh": 15,
+        "scripts/release.sh": 107
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+We are beginning the AegisGraph Buildathon project in Track 2  Build with Graph Intelligence.
+
+For this session, do NOT modify any files and do NOT implement code.
+
+First, inspect the repository and understand its current architecture, especially:
+- the existing Entire Graph implementation
+- the CLI structure
+- how the graph plugin is integrated
+- existing tests
+- where a separate AegisGraph MVP could safely live without disrupting Entire Graph
+
+Then provide a concise architecture assessment and identify the safest location for a new AegisGraph MVP.
+
+This is the initial understanding/architecture milestone. Keep the working tree unchanged.
+
+---
+
+Inspect the repository read-only. Focus on how the graph plugin is integrated: manifests, generated guidance, build/runtime entrypoints, configuration, and extension points. Do not modify files. Return concise findings with paths and line references where possible.
+
+---
+
+Inspect the repository read-only. Focus on the existing Entire Graph implementation and CLI structure. Identify key files, packages, command dispatch, graph subcommands, and architectural boundaries. Do not modify files. Return concise findings with paths and line references where possible.
+
+---
+
+Inspect the repository read-only. Focus on existing tests, test organization, build scripts, and the safest location for a separate AegisGraph MVP that will not disrupt Entire Graph. Do not modify files. Return concise findings with paths and line references where possible.
